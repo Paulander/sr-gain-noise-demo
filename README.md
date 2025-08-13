@@ -9,8 +9,9 @@ A tiny, self-contained browser demo that shows why adding **moderate broadband n
 ## Quick start
 
 1. Put these files in a folder:
-   - `index.html` — the interactive demo
-   - `README.md` — this file
+   - `index.html` - the interactive demo
+   - `style.css` - stylesheet
+   - `README.md` - this file
 2. Double click `index.html` or run a static server, e.g. `python -m http.server` and open <http://localhost:8000>.
 
 You can also host this on GitHub Pages by placing `index.html` at the repository root.
@@ -65,9 +66,10 @@ Buttons:
 
 ```
 sr-gain-noise-demo/
-├─ index.html        # the interactive demo (rename from sr_gain_demo.html)
+├─ index.html        # the interactive demo
+├─ style.css         # stylesheet: look and feel. 
 ├─ README.md         # this file
-└─ LICENSE           # e.g., MIT (optional but recommended)
+└─ LICENSE           # MIT License. 
 ```
 
 ---
