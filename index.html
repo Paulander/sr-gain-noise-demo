@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Stochastic Resonance Demo — Gain/Dopamine vs Noise</title>
+<style>
+  :root { --bg:#0b0d12; --fg:#e6e7ea; --muted:#9aa1ac; --a:#6ea8fe; --b:#9ef0a1; --grid:#1a1e26; --card:#11151b; --accent:#ffd36e; }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--fg);}
+  header{padding:16px 20px; border-bottom:1px solid #151a21;}
+  header h1{margin:0; font-size:18px; font-weight:600}
+  header p{margin:6px 0 0; color:var(--muted); font-size:13px}
+  main{display:grid; grid-template-columns: 360px 1fr; gap:16px; padding:16px;}
+  @media(max-width:1000px){ main{grid-template-columns:1fr;} }
+  .panel{background:var(--card); border:1px solid #151a21; border-radius:12px; padding:14px;}
+  .controls h2{font-size:14px; margin:4px 0 12px; color:var(--muted); letter-spacing:.03em; text-transform:uppercase}
+  .row{display:grid; grid-template-columns: 1fr 70px; gap:10px; align-items:center; margin:10px 0;}
+  .row label{font-size:13px; color:var(--fg)}
+  .row input[type="range"]{width:100%}
+  .small{font-size:12px; color:var(--muted)}
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .btns{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
+  button{background:#151a21; color:var(--fg); border:1px solid #1f2631; padding:8px 10px; border-radius:8px; cursor:pointer;}
+  button:hover{border-color:#2b3545}
+  canvas{background:var(--card); border-radius:12px; width:100%; height:520px; display:block;}
+  .legend{display:flex; gap:14px; align-items:center; margin-top:8px; flex-wrap:wrap}
+  .chip{display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+  .dot{width:12px; height:12px; border-radius:50%}
+  .a{background:var(--a)}
+  .b{background:var(--b)}
+  .accent{color:var(--accent)}
+  details{margin-top:8px;}
+  summary{cursor:pointer; color:var(--muted)}
+  code{background:#0c0f14; padding:2px 4px; border-radius:6px; border:1px solid #171c25}
+  a{color:var(--a); text-decoration:none}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:8px 12px; margin-top:6px; font-size:13px; color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Stochastic Resonance (SR): gain/dopamine × threshold × noise</h1>
+  <p>Interactive toy model of a threshold detector with dopaminergic gain. Shows why adding moderate broadband noise can improve performance (inverted‑U), and why lower gain shifts the optimum right.</p>
+</header>
+<main>
+  <section class="panel controls">
+    <h2>Controls</h2>
+    <div class="row"><label>Signal amplitude <b>s</b> <span class="small">(subthreshold stimulus)</span></label><input id="s" type="range" min="0" max="1" step="0.01" value="0.20"></div>
+    <div class="row"><label>Threshold <b>θ</b></label><input id="theta" type="range" min="0" max="1.0" step="0.01" value="0.50"></div>
+    <div class="row"><label>Internal noise σ<sub>int</sub></label><input id="sigmaInt" type="range" min="0" max="0.50" step="0.005" value="0.05"></div>
+    <div class="row"><label>External noise coupling <b>α</b></label><input id="alpha" type="range" min="0" max="2.0" step="0.01" value="1.00"></div>
+    <div class="row"><label>Max external noise σ<sub>ext,max</sub> (x‑axis)</label><input id="sigmaMax" type="range" min="0.2" max="3.0" step="0.05" value="1.20"></div>
+    <hr style="border:none;border-top:1px solid #171c25; margin:10px 0">
+    <div class="split">
+      <div class="panel" style="background:#0f1319">
+        <div class="row"><label>Gain (Group A) <b>g<sub>A</sub></b> <span class="small">(“ADHD/low‑DA”)</span></label><input id="g1" type="range" min="0.1" max="5.0" step="0.01" value="1.00"></div>
+      </div>
+      <div class="panel" style="background:#0f1319">
+        <div class="row"><label>Gain (Group B) <b>g<sub>B</sub></b> <span class="small">(“Control/higher‑DA”)</span></label><input id="g2" type="range" min="0.1" max="5.0" step="0.01" value="2.00"></div>
+      </div>
+    </div>
+    <div class="row"><label><input id="showTwo" type="checkbox" checked> Show both groups</label><span></span></div>
+    <div class="btns">
+      <button id="reset">Reset</button>
+      <button id="export">Export PNG</button>
+    </div>
+    <div class="kv">
+      <div>Metric:</div><div>Balanced accuracy = ½·(hit rate + specificity).</div>
+      <div>Hit rate H:</div><div>H = 1 − Φ((θ − g·s)/(g·σ)), where σ = √(σ²<sub>int</sub> + (α·σ<sub>ext</sub>)²)</div>
+      <div>False alarm F:</div><div>F = 1 − Φ(θ/(g·σ)). Specificity = 1 − F.</div>
+      <div>Why inverted‑U?</div><div>Small noise helps subthreshold signals cross the effective boundary; too much noise raises false alarms.</div>
+    </div>
+    <details>
+      <summary>More notes</summary>
+      <div class="small" style="margin-top:6px; line-height:1.5">
+        <p><b>Gain <i>g</i></b> stands in for dopaminergic modulation (steeper input–output). Lower <i>g</i> ⇒ you need more external noise to reach the sweet spot (right‑shift).</p>
+        <p><b>α</b> is how strongly external broadband noise (e.g., white noise) couples into effective internal noise. Continuous, non‑salient noise acts like “dither.”</p>
+        <p>This is a deliberately minimal, static model (no dynamics, no attention). It’s meant to illustrate the Moderate Brain Arousal intuition, not prove it.</p>
+      </div>
+    </details>
+  </section>
+  <section class="panel">
+    <canvas id="plot" width="1200" height="520"></canvas>
+    <div class="legend">
+      <div class="chip"><span class="dot a"></span><span>Group A (g<sub>A</sub>) — peak at <span id="peakA" class="accent">–</span></span></div>
+      <div class="chip"><span class="dot b"></span><span>Group B (g<sub>B</sub>) — peak at <span id="peakB" class="accent">–</span></span></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// Normal CDF via erf
+function phi(z){ return 0.5*(1+erf(z/Math.SQRT2)); }
+function erf(x){
+  // Abramowitz & Stegun approximation
+  const sign = Math.sign(x);
+  x = Math.abs(x);
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const t = 1/(1+p*x);
+  const y = 1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+
+// Balanced accuracy for a given g, theta, s, sigma_int, alpha, sigma_ext
+function balAcc(g, theta, s, sigmaInt, alpha, sigmaExt){
+  const sigma = Math.sqrt(sigmaInt*sigmaInt + (alpha*sigmaExt)*(alpha*sigmaExt));
+  if (sigma === 0){
+    const H = (g*s > theta) ? 1 : 0;
+    const F = (theta < 0) ? 1 : 0;
+    return 0.5*(H + (1-F));
+  } else {
+    const H = 1 - phi((theta - g*s)/(g*sigma));
+    const F = 1 - phi(theta/(g*sigma));
+    return 0.5*(H + (1-F));
+  }
+}
+
+// UI elements
+const ids = ["s","theta","sigmaInt","alpha","sigmaMax","g1","g2","showTwo"];
+const el = Object.fromEntries(ids.map(id=>[id, document.getElementById(id)]));
+const canvas = document.getElementById("plot");
+const ctx = canvas.getContext("2d");
+const peakAEl = document.getElementById("peakA");
+const peakBEl = document.getElementById("peakB");
+
+function getParams(){
+  return {
+    s: parseFloat(el.s.value),
+    theta: parseFloat(el.theta.value),
+    sigmaInt: parseFloat(el.sigmaInt.value),
+    alpha: parseFloat(el.alpha.value),
+    sigmaMax: parseFloat(el.sigmaMax.value),
+    g1: parseFloat(el.g1.value),
+    g2: parseFloat(el.g2.value),
+    showTwo: el.showTwo.checked
+  };
+}
+
+ids.forEach(id=>{
+  (id==="showTwo" ? el[id] : el[id]).addEventListener("input", draw);
+});
+
+document.getElementById("reset").addEventListener("click", ()=>{
+  el.s.value = 0.20;
+  el.theta.value = 0.50;
+  el.sigmaInt.value = 0.05;
+  el.alpha.value = 1.00;
+  el.sigmaMax.value = 1.20;
+  el.g1.value = 1.00;
+  el.g2.value = 2.00;
+  el.showTwo.checked = true;
+  draw();
+});
+
+document.getElementById("export").addEventListener("click", ()=>{
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sr_gain_demo.png";
+  a.click();
+});
+
+function drawAxes(xmin, xmax, ymin, ymax){
+  const padding = {l:60, r:20, t:16, b:44};
+  const w = canvas.width, h = canvas.height;
+  // bg
+  ctx.fillStyle = "#0f1319";
+  ctx.fillRect(0,0,w,h);
+  // plot area
+  const xl = padding.l, xr = w - padding.r, yt = padding.t, yb = h - padding.b;
+  // grid
+  ctx.strokeStyle = "#1a1e26";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i=0;i<=10;i++){
+    const x = xl + (xr-xl)*i/10;
+    ctx.moveTo(x, yt); ctx.lineTo(x, yb);
+  }
+  for (let j=0;j<=10;j++){
+    const y = yb - (yb-yt)*j/10;
+    ctx.moveTo(xl, y); ctx.lineTo(xr, y);
+  }
+  ctx.stroke();
+  // axes
+  ctx.strokeStyle = "#2b3545";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(xl, yt); ctx.lineTo(xl, yb); ctx.lineTo(xr, yb);
+  ctx.stroke();
+  // ticks + labels
+  ctx.fillStyle = "#9aa1ac";
+  ctx.font = "12px ui-sans-serif, system-ui";
+  ctx.textAlign = "center";
+  for (let i=0;i<=10;i++){
+    const x = xl + (xr-xl)*i/10;
+    const xv = xmin + (xmax-xmin)*i/10;
+    ctx.fillText(xv.toFixed(2), x, h-20);
+  }
+  ctx.textAlign = "right";
+  for (let j=0;j<=10;j++){
+    const y = yb - (yb-yt)*j/10;
+    const yv = ymin + (ymax-ymin)*j/10;
+    ctx.fillText(yv.toFixed(2), 52, y+4);
+  }
+  // axis titles
+  ctx.fillStyle = "#e6e7ea";
+  ctx.textAlign = "center";
+  ctx.fillText("external noise σ_ext", (xl+xr)/2, h-6);
+  ctx.save();
+  ctx.translate(16, (yt+yb)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText("balanced accuracy", 0, 0);
+  ctx.restore();
+  return {xl,xr,yt,yb};
+}
+
+function plotCurve(xs, ys, color){
+  const {xl,xr,yt,yb} = plotArea;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.25;
+  ctx.beginPath();
+  for (let i=0;i<xs.length;i++){
+    const x = xl + (xr-xl)*(xs[i]-xmin)/(xmax-xmin);
+    const y = yb - (yb-yt)*(ys[i]-ymin)/(ymax-ymin);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+
+let xmin=0, xmax=1.2, ymin=0.4, ymax=0.9, plotArea=null;
+
+function draw(){
+  const p = getParams();
+  xmin = 0; xmax = p.sigmaMax;
+  ymin = 0.4; ymax = 1.0;
+  plotArea = drawAxes(xmin,xmax,ymin,ymax);
+  // sample xs
+  const N = 301;
+  const xs = Array.from({length:N}, (_,i)=> xmin + (xmax-xmin)*i/(N-1));
+  // group A
+  const ysA = xs.map(x => balAcc(p.g1, p.theta, p.s, p.sigmaInt, p.alpha, x));
+  plotCurve(xs, ysA, getComputedStyle(document.documentElement).getPropertyValue('--a').trim());
+  // peak A
+  let iA = 0; for (let i=1;i<ysA.length;i++) if (ysA[i]>ysA[iA]) iA=i;
+  const peakAx = xs[iA], peakAy = ysA[iA];
+  drawPeak(peakAx, peakAy, "#6ea8fe");
+  peakAEl.textContent = `σ_ext ≈ ${peakAx.toFixed(3)}, acc ≈ ${peakAy.toFixed(3)}`;
+  // group B
+  if (p.showTwo){
+    const ysB = xs.map(x => balAcc(p.g2, p.theta, p.s, p.sigmaInt, p.alpha, x));
+    plotCurve(xs, ysB, getComputedStyle(document.documentElement).getPropertyValue('--b').trim());
+    let iB = 0; for (let i=1;i<ysB.length;i++) if (ysB[i]>ysB[iB]) iB=i;
+    const peakBx = xs[iB], peakBy = ysB[iB];
+    drawPeak(peakBx, peakBy, "#9ef0a1");
+    peakBEl.textContent = `σ_ext ≈ ${peakBx.toFixed(3)}, acc ≈ ${peakBy.toFixed(3)}`;
+  } else {
+    peakBEl.textContent = "—";
+  }
+}
+
+function drawPeak(xv, yv, color){
+  const {xl,xr,yt,yb} = plotArea;
+  const x = xl + (xr-xl)*(xv-xmin)/(xmax-xmin);
+  const y = yb - (yb-yt)*(yv-ymin)/(ymax-ymin);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,4.5,0,2*Math.PI);
+  ctx.fill();
+  // dashed guide
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle = "#2b3545"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x, yb); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+draw();
+</script>
+</body>
+</html>
