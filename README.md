@@ -41,7 +41,7 @@ This is a deliberately minimal, static model that illustrates intuition, not a c
 - **Continuous broadband noise** works because it adds energy without structured content that would capture attention. Intermittent or meaningful sounds tend to harm performance.
 
 For background and data, see:
-- **Söderlund, Sikström, Smart (2007)**. *Listen to the noise: noise is beneficial for cognitive performance in ADHD*, *Journal of Child Psychology and Psychiatry*, 48(8), 840–847. doi:10.1111/j.1469-7610.2007.01749.x. This paper introduces the ADHD finding and links it to stochastic resonance and dopamine-modulated gain.
+- **Söderlund, Sikström (2007)**. *Listen to the noise: noise is beneficial for cognitive performance in ADHD*, *Journal of Child Psychology and Psychiatry*, 48(8), 840–847. doi:10.1111/j.1469-7610.2007.01749.x. This paper introduces the ADHD finding and links it to stochastic resonance and dopamine-modulated gain.
 - **Moss, Ward, Sannita (2004)**. *Stochastic resonance and sensory information processing: a tutorial and review of applications*, *Clinical Neurophysiology*, 115, 267–281.
 
 ---
